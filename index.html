@@ -284,6 +284,7 @@ const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
 const weekStart=d=>addDays(new Date(d.getFullYear(),d.getMonth(),d.getDate()),-d.getDay());
 const today=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate())};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fd=t=>String(t).replace(/\d{4}-\d{2}-\d{2}/g,'<bdi dir="ltr">$&</bdi>');
 function hij(d){try{return new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-latn",{day:"numeric",month:"short"}).format(d)}catch(e){return ""}}
 function gr(d){return d.getDate()+"/"+(d.getMonth()+1)}
 function monthName(d){try{return new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn",{month:"long",year:"numeric"}).format(d)}catch(e){return d.getFullYear()+"/"+(d.getMonth()+1)}}
@@ -455,36 +456,35 @@ function paperHTML(P,pct,st,counts,nd){
   const pr=S.primary,ac=S.accent,onp=onCol(pr),logo=S.logo||LOGO0,ink="#14211f",mut="#5b6a68",line="#d9e2e1";
   const stc={ok:"#1d7a4f",warn:"#a96d0a",bad:"#b4402f"}[st[1]];
   const total=counts.reduce((a,b)=>a+b,0),pc=x=>Math.round(dayCount(iso(x))/CRIT.length*100);
-  const yes='<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1d7a4f"/><path d="M6.5 12.5l4 4 7-8.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const no='<svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#b4402f"/><path d="M8 8l8 8M16 8l-8 8" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/></svg>';
-  const th=t=>'<th style="background:'+pr+';color:'+onp+';padding:8px 10px;text-align:right;font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:14px">'+t+'</th>';
-  const td=(t,x)=>'<td style="padding:7px 10px;border-bottom:1px solid '+line+';font-size:14px;'+(x||"")+'">'+t+'</td>';
-  const box=(lab,val,col)=>'<div style="flex:1;border:1px solid '+line+';border-top:5px solid '+ac+';border-radius:10px;padding:10px 14px;text-align:center"><div style="font-size:13px;color:'+mut+'">'+lab+'</div><div style="font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:28px;line-height:1.3;color:'+col+'">'+val+'</div></div>';
-  let rows=CRIT.map((c,i)=>'<tr>'+td(esc(c))+(nd>1?td(counts[i]+" / "+nd,"text-align:center"):"")+td(counts[i]===nd?yes:no,"text-align:center;width:60px")+'</tr>').join("");
+  const hf="font-family:Tajarib,Tahoma,sans-serif;font-weight:700;";
+  const yes='<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#1d7a4f"/><path d="M6.5 12.5l4 4 7-8.5" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const no='<svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#b4402f"/><path d="M8 8l8 8M16 8l-8 8" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/></svg>';
+  const th=t=>'<th style="background:'+pr+';color:'+onp+';padding:5px 10px;text-align:right;'+hf+'font-size:13px">'+t+'</th>';
+  const td=(t,x)=>'<td style="padding:4px 10px;border-bottom:1px solid '+line+';font-size:13px;line-height:1.5;'+(x||"")+'">'+t+'</td>';
+  const box=(lab,val,col)=>'<div style="flex:1;border:1px solid '+line+';border-top:4px solid '+ac+';border-radius:8px;padding:6px 10px;text-align:center"><div style="font-size:12px;color:'+mut+'">'+lab+'</div><div style="'+hf+'font-size:22px;line-height:1.35;color:'+col+'">'+val+'</div></div>';
+  const hd=t=>'<div style="margin-top:12px;'+hf+'font-size:14px;color:'+pr+'">'+t+'</div>';
+  const tbl=(h,r)=>'<table style="width:100%;border-collapse:collapse;margin-top:5px"><tr>'+h+'</tr>'+r+'</table>';
+  const rows=CRIT.map((c,i)=>'<tr>'+td(counts[i]===nd?yes:no,"text-align:center;width:56px")+td(esc(c))+(nd>1?td(counts[i]+" / "+nd,"text-align:center"):"")+'</tr>').join("");
   let extra="";
   if(kind==="w"){
-    extra='<div style="margin-top:16px;font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:16px;color:'+pr+'">الالتزام حسب اليوم</div><table style="width:100%;border-collapse:collapse;margin-top:6px"><tr>'+th("اليوم")+th("التاريخ")+th("النسبة")+'</tr>'+P.list.map(x=>'<tr>'+td(DAYS[x.getDay()])+td(iso(x))+td(pc(x)+"%")+'</tr>').join("")+'</table>';
+    extra=hd("الالتزام حسب اليوم")+tbl(th("اليوم")+th("التاريخ")+th("النسبة"),P.list.map(x=>'<tr>'+td(DAYS[x.getDay()])+td(iso(x))+td(pc(x)+"%")+'</tr>').join(""));
   }else if(kind==="m"){
-    extra='<div style="margin-top:16px;font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:16px;color:'+pr+'">الالتزام حسب الأسبوع</div><table style="width:100%;border-collapse:collapse;margin-top:6px"><tr>'+th("الأسبوع")+th("الفترة")+th("النسبة")+'</tr>'+weekGroups(P.list).map((g,i)=>{const a=Math.round(g.reduce((n,x)=>n+dayCount(iso(x)),0)/(g.length*CRIT.length)*100);return '<tr>'+td("الأسبوع "+(i+1))+td(iso(g[0])+" إلى "+iso(g[g.length-1]))+td(a+"%")+'</tr>'}).join("")+'</table>';
+    extra=hd("الالتزام حسب الأسبوع")+tbl(th("الأسبوع")+th("الفترة")+th("النسبة"),weekGroups(P.list).map((g,i)=>{const a=Math.round(g.reduce((n,x)=>n+dayCount(iso(x)),0)/(g.length*CRIT.length)*100);return '<tr>'+td("الأسبوع "+(i+1))+td(fd(iso(g[0])+" إلى "+iso(g[g.length-1])))+td(a+"%")+'</tr>'}).join(""));
   }
   const note=(S.notes[P.key]||"").trim(),signed=S.signed[P.key];
-  return '<div style="width:794px;min-height:1123px;background:#ffffff;color:'+ink+';direction:rtl;font-family:\'IBM Plex Sans Arabic\',Tahoma,sans-serif;display:flex;flex-direction:column;box-sizing:border-box">'+
-  '<div style="background:'+pr+';color:'+onp+';padding:22px 30px;display:flex;align-items:center;gap:18px;border-bottom:7px solid '+ac+'">'+
-    '<div style="background:#ffffff;border-radius:12px;width:96px;height:96px;display:flex;align-items:center;justify-content:center"><img src="'+logo+'" style="height:84px;width:auto;max-width:84px"></div>'+
-    '<div style="flex:1"><div style="font-size:15px">'+esc(S.school||"المقصف المدرسي")+'</div><div style="font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:30px;line-height:1.4">تقرير متابعة المقصف المدرسي</div><div style="font-size:15px">'+esc(P.label)+'</div></div></div>'+
-  '<div style="padding:22px 30px;flex:1">'+
-    '<div style="display:flex;gap:12px">'+box("نسبة الالتزام",pct+"%",stc)+box("التقييم",st[0],stc)+box("البنود المحققة",total+" من "+(nd*CRIT.length),ink)+'</div>'+
-    '<div style="margin-top:18px;font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:16px;color:'+pr+'">بنود المتابعة'+(nd>1?" ("+nd+" أيام)":"")+'</div>'+
-    '<table style="width:100%;border-collapse:collapse;margin-top:6px"><tr>'+th("البند")+(nd>1?th("الأيام المحققة"):"")+th("الحالة")+'</tr>'+rows+'</table>'+
+  const nameBox=(lab,nm)=>'<div style="flex:1;text-align:center"><div style="font-size:12px;color:'+mut+'">'+lab+'</div><div style="'+hf+'font-size:15px;margin-top:2px">'+nm+'</div><div style="height:1px;background:'+line+';margin:22px 18px 0"></div></div>';
+  return '<div style="width:794px;background:#ffffff;color:'+ink+';direction:rtl;font-family:\'IBM Plex Sans Arabic\',Tahoma,sans-serif;box-sizing:border-box;padding-bottom:12px">'+
+  '<div style="background:'+pr+';color:'+onp+';padding:12px 24px;display:flex;align-items:center;gap:14px;border-bottom:5px solid '+ac+'">'+
+    '<div style="background:#ffffff;border-radius:10px;width:70px;height:70px;display:flex;align-items:center;justify-content:center"><img src="'+logo+'" style="height:60px;width:auto;max-width:60px"></div>'+
+    '<div style="flex:1"><div style="font-size:13px">'+esc(S.school||"المقصف المدرسي")+'</div><div style="'+hf+'font-size:24px;line-height:1.4">تقرير متابعة المقصف المدرسي</div><div style="font-size:13px">'+fd(esc(P.label))+'</div></div></div>'+
+  '<div style="padding:12px 24px 0">'+
+    '<div style="display:flex;gap:10px">'+box("نسبة الالتزام",pct+"%",stc)+box("التقييم",st[0],stc)+box("البنود المحققة",total+" من "+(nd*CRIT.length),ink)+'</div>'+
+    hd("بنود المتابعة"+(nd>1?" ("+nd+" أيام)":""))+tbl(th("الحالة")+th("البند")+(nd>1?th("الأيام المحققة"):""),rows)+
     extra+
-    '<div style="margin-top:16px;font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:16px;color:'+pr+'">الملاحظات</div>'+
-    '<div style="margin-top:6px;border:1px solid '+line+';border-radius:10px;padding:10px 14px;min-height:52px;font-size:14px;line-height:1.8;white-space:pre-wrap">'+(note?esc(note):'<span style="color:'+mut+'">لا يوجد</span>')+'</div>'+
-  '</div>'+
-  '<div style="padding:0 30px 24px"><div style="display:flex;gap:30px;border-top:3px solid '+ac+';padding-top:14px;text-align:center">'+
-    '<div style="flex:1"><div style="font-size:13px;color:'+mut+'">مسؤولة المقصف</div><div style="font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:17px;margin-top:4px">أ. أروى عسيري</div><div style="height:1px;background:'+line+';margin:30px 16px 0"></div></div>'+
-    '<div style="flex:1"><div style="font-size:13px;color:'+mut+'">الإشراف على التوقيع والمتابعة</div><div style="font-family:Tajarib,Tahoma,sans-serif;font-weight:700;font-size:17px;margin-top:4px">أ. ذكرى الغامدي</div><div style="height:1px;background:'+line+';margin:30px 16px 0"></div></div></div>'+
-    '<div style="margin-top:12px;font-size:12px;color:'+mut+';text-align:center">'+(signed?'معتمد بتاريخ '+esc(signed):'لم يُعتمد بعد')+' · أُنشئ بتاريخ '+iso(today())+'</div></div>'+
-  '</div>';
+    hd("الملاحظات")+'<div style="margin-top:5px;border:1px solid '+line+';border-radius:8px;padding:7px 12px;font-size:13px;line-height:1.7;white-space:pre-wrap">'+(note?esc(note):'<span style="color:'+mut+'">لا يوجد</span>')+'</div>'+
+    '<div style="display:flex;gap:24px;border-top:2px solid '+ac+';margin-top:14px;padding-top:10px">'+nameBox("مسؤولة المقصف","أ. أروى عسيري")+nameBox("الإشراف على التوقيع والمتابعة","أ. ذكرى الغامدي")+'</div>'+
+    '<div style="margin-top:8px;font-size:11px;color:'+mut+';text-align:center">'+(signed?'معتمد بتاريخ '+fd(esc(signed)):'لم يُعتمد بعد')+' · أُنشئ بتاريخ '+fd(iso(today()))+'</div>'+
+  '</div></div>';
 }
 async function makePDF(P,pct,st,counts,nd){
   try{await Promise.all([document.fonts.load('700 20px Tajarib','تقرير'),document.fonts.load('400 14px "IBM Plex Sans Arabic"','تقرير'),document.fonts.ready])}catch(e){}
@@ -495,13 +495,9 @@ async function makePDF(P,pct,st,counts,nd){
   try{
     const cv=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false,windowWidth:794,onclone:d=>{const k=d.createElement("style");k.textContent=":root{color-scheme:light}";d.head.appendChild(k)}});
     const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"});
-    const pw=210,ph=297,pageH=Math.floor(cv.width*ph/pw);
-    for(let y=0,first=true;y<cv.height;y+=pageH,first=false){
-      const sl=document.createElement("canvas");sl.width=cv.width;sl.height=Math.min(pageH,cv.height-y);
-      const x=sl.getContext("2d");x.fillStyle="#ffffff";x.fillRect(0,0,sl.width,sl.height);x.drawImage(cv,0,y,cv.width,sl.height,0,0,cv.width,sl.height);
-      if(!first)pdf.addPage();
-      pdf.addImage(sl.toDataURL("image/jpeg",0.93),"JPEG",0,0,pw,sl.height*pw/cv.width);
-    }
+    const pw=210,ph=297;let w=pw,h=cv.height*pw/cv.width;
+    if(h>ph){w=pw*ph/h;h=ph}
+    pdf.addImage(cv.toDataURL("image/jpeg",0.95),"JPEG",(pw-w)/2,0,w,h);
     return pdf.output("blob");
   }finally{host.remove()}
 }
@@ -545,7 +541,7 @@ function renderReport(){
   const total=counts.reduce((a,b)=>a+b,0),pct=Math.round(total/(nd*CRIT.length)*100),st=status(pct);
   const lacking=CRIT.map((c,i)=>({c,n:counts[i]})).filter(x=>x.n<nd);
   const signed=S.signed[P.key],note=S.notes[P.key]||"";
-  let h="<div class='card'><h2>"+esc(P.label)+"</h2><div class='score'><div class='big'>"+pct+"%</div><span class='pill "+st[1]+"'>"+st[0]+"</span><span style='color:var(--muted);font-size:13px'>"+total+" من "+(nd*CRIT.length)+" بنداً محققاً خلال "+nd+(nd===1?" يوم":" أيام")+"</span></div></div>";
+  let h="<div class='card'><h2>"+fd(esc(P.label))+"</h2><div class='score'><div class='big'>"+pct+"%</div><span class='pill "+st[1]+"'>"+st[0]+"</span><span style='color:var(--muted);font-size:13px'>"+total+" من "+(nd*CRIT.length)+" بنداً محققاً خلال "+nd+(nd===1?" يوم":" أيام")+"</span></div></div>";
   h+="<div class='card'><h2>تفصيل البنود</h2><ul class='items'>"+CRIT.map((c,i)=>{
     const full=counts[i]===nd;
     return "<li><span class='dot "+(full?"full":"")+"'>"+(full?TICK:"")+"</span><span>"+esc(c)+"</span><span class='pct'>"+counts[i]+"/"+nd+"</span><span class='bar'><i style='width:"+Math.round(counts[i]/nd*100)+"%'></i></span></li>"}).join("")+"</ul></div>";
