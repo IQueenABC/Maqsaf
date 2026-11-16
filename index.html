@@ -90,18 +90,18 @@ input[type=color]{width:46px;height:38px;border:1px solid var(--line);border-rad
 .weekbar .range small{display:block;color:var(--muted);font-weight:400;font-size:12px}
 .nav{display:flex;gap:6px}
 .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
-table{border-collapse:separate;border-spacing:0;width:100%;min-width:430px}
-th,td{padding:8px 4px;text-align:center;border-bottom:1px solid var(--line)}
-th.crit,td.crit{text-align:right;padding-inline:10px;width:40%;font-size:14px;position:sticky;right:0;background:var(--surface);z-index:1}
-thead th{background:var(--soft);font-weight:600;font-size:13px;line-height:1.3}
-thead th small{display:block;font-weight:400;color:var(--muted);font-size:11px}
-thead th.today{box-shadow:inset 0 -3px 0 var(--accent)}
-tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--soft) 55%,var(--surface))}
+#grid{border-collapse:separate;border-spacing:0;width:100%;min-width:430px}
+#grid th,#grid td{padding:8px 4px;text-align:center;border-bottom:1px solid var(--line)}
+#grid th.crit,#grid td.crit{text-align:right;padding-inline:10px;width:40%;font-size:14px;position:sticky;right:0;background:var(--surface);z-index:1}
+#grid thead th{background:var(--soft);font-weight:600;font-size:13px;line-height:1.3}
+#grid thead th small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+#grid thead th.today{box-shadow:inset 0 -3px 0 var(--accent)}
+#grid tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--soft) 55%,var(--surface))}
 .tick{width:36px;height:36px;border-radius:9px;border:2px solid var(--line);background:var(--surface);display:inline-grid;place-items:center;padding:0}
 .tick svg{width:20px;height:20px;opacity:0}
 .tick[aria-pressed=true]{background:var(--primary);border-color:var(--primary)}
 .tick[aria-pressed=true] svg{opacity:1}
-tfoot td{font-weight:600;border-bottom:0;background:var(--soft)}
+#grid tfoot td{font-weight:600;border-bottom:0;background:var(--soft)}
 .pct{font-variant-numeric:tabular-nums}
 .mini{font-size:11px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:2px 6px;color:var(--muted)}
 
@@ -469,7 +469,7 @@ async function makePDF(P,pct,st,counts,nd){
   host.innerHTML=paperHTML(P,pct,st,counts,nd);
   document.body.appendChild(host);
   try{
-    const cv=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false,windowWidth:794});
+    const cv=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false,windowWidth:794,onclone:d=>{const k=d.createElement("style");k.textContent=":root{color-scheme:light}";d.head.appendChild(k)}});
     const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"});
     const pw=210,ph=297,pageH=Math.floor(cv.width*ph/pw);
     for(let y=0,first=true;y<cv.height;y+=pageH,first=false){
@@ -488,13 +488,27 @@ async function exportPDF(P,pct,st,counts,nd){
     const dl=(window.claude&&window.claude.use)?await window.claude.use("downloads"):null;
     btn.disabled=true;msg.textContent="جارٍ تجهيز الملف...";
     const blob=await makePDF(P,pct,st,counts,nd);
-    const nm={d:"يومي",w:"أسبوعي",m:"شهري"}[kind];
-    const fname="تقرير-المقصف-"+nm+"-"+P.key.slice(2)+".pdf";
-    if(dl){await dl.save({filename:fname,data:blob})}
-    else{const u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download=fname;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),5000)}
-    msg.textContent="تم تجهيز الملف. أرفقيه الآن في واتساب من ملفات الجهاز.";
+    const fname="canteen-report-"+({d:"daily",w:"weekly",m:"monthly"}[kind])+"-"+P.key.slice(2)+".pdf";
+    let file=null;try{file=new File([blob],fname,{type:"application/pdf"})}catch(x){}
+    const canShare=!!(file&&navigator.canShare&&navigator.canShare({files:[file]}));
+    const doSave=async()=>{
+      if(dl){await dl.save({filename:fname,data:blob})}
+      else{const u=URL.createObjectURL(blob),l=document.createElement("a");l.href=u;l.download=fname;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),8000)}
+      msg.textContent="تم تنزيل الملف. أرفقيه في واتساب من ملفات الجهاز.";
+    };
+    if(canShare){
+      try{await navigator.share({files:[file],title:"تقرير المقصف المدرسي"});msg.textContent="تمت المشاركة.";return}
+      catch(e){
+        if(e&&e.name==="AbortError"){msg.textContent="أُلغيت المشاركة.";return}
+        msg.innerHTML="الملف جاهز. <button class='btn main' id='shareNow' type='button'>مشاركة الآن</button> <button class='btn' id='saveNow' type='button'>تنزيل</button>";
+        $("shareNow").onclick=async()=>{try{await navigator.share({files:[file],title:"تقرير المقصف المدرسي"})}catch(x){}};
+        $("saveNow").onclick=()=>doSave().catch(()=>{});
+        return;
+      }
+    }
+    await doSave();
   }catch(e){
-    msg.textContent=(e&&e.code==="declined")?"لم يُحفظ الملف.":"تعذر إنشاء الملف، حاولي مرة أخرى.";
+    msg.textContent=(e&&e.code==="declined")?"لم يُحفظ الملف.":"تعذر إنشاء الملف ("+((e&&(e.message||e.name))||e)+"). أرسلي لي هذه الرسالة.";
   }finally{btn.disabled=false}
 }
 function renderReport(){
@@ -518,8 +532,8 @@ function renderReport(){
     "<textarea id='rNote' placeholder='اكتبي الملاحظات أو الإجراءات التصحيحية هنا'>"+esc(note)+"</textarea>"+
     "<div class='acts'><button class='btn acc' id='signBtn' type='button'>"+(signed?"إلغاء الاعتماد":"اعتماد التقرير بعد التأكد")+"</button>"+(signed?"<span class='stamp'>اعتُمد بتاريخ "+esc(signed)+"</span>":"")+"</div></div>";
   h+="<div class='card'><h2>التقرير النهائي للإرسال</h2><div class='wa' id='waPrev' dir='rtl'></div>"+
-    "<div class='acts'><button class='btn acc' id='pdfBtn' type='button'>تنزيل التقرير PDF</button><a class='btn wa-btn' id='waLink' target='_blank' rel='noopener'>إرسال عبر واتساب</a><button class='btn' id='copyBtn' type='button'>نسخ التقرير</button><span id='copyMsg' class='hint'></span></div><div id='pdfMsg' class='hint' role='status'></div>"+
-    "<p class='hint'>لإرسال ورقة التقرير: نزّلي ملف PDF ثم أرفقيه في واتساب. وزر واتساب يرسل التقرير نصاً بالشكل الظاهر أعلاه. يُفضّل اعتماد التقرير قبل إرساله.</p></div>";
+    "<div class='acts'><button class='btn acc' id='pdfBtn' type='button'>مشاركة / تنزيل PDF</button><a class='btn wa-btn' id='waLink' target='_blank' rel='noopener'>إرسال عبر واتساب</a><button class='btn' id='copyBtn' type='button'>نسخ التقرير</button><span id='copyMsg' class='hint'></span></div><div id='pdfMsg' class='hint' role='status'></div>"+
+    "<p class='hint'>لإرسال ورقة التقرير: اضغطي «مشاركة / تنزيل PDF»، وعلى الجوال تظهر قائمة اختاري منها واتساب. وزر واتساب يرسل التقرير نصاً بالشكل الظاهر أعلاه. يُفضّل اعتماد التقرير قبل إرساله.</p></div>";
   $("rOut").innerHTML=h;
   const refresh=()=>{const t=reportText(P,pct,st,counts,nd);$("waPrev").textContent=t;$("waLink").href="https://wa.me/?text="+encodeURIComponent(t)};
   refresh();
