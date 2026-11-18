@@ -601,7 +601,7 @@ function paperHTML(R){
   const info='<div style="position:relative;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:6px;font-size:12.5px">'+
     fld("اسم المدرسة",esc(S.school)+(S.stage?" "+esc(S.stage):""),150)+fld("التاريخ",R.dateHtml,120)+fld("عدد البائعين",esc(R.sellers),30)+fld("عدد المقاصف",esc(R.canteens),30)+'</div>';
   const nameBox=(lab,nm)=>'<div style="flex:1;text-align:center"><div style="font-size:11.5px;color:'+mut+'">'+lab+'</div><div style="'+hf+'font-size:14px;margin-top:2px">'+nm+'</div><div style="height:1px;background:'+gl+';margin:16px 18px 0"></div></div>';
-  return '<div style="position:relative;width:794px;background:#ffffff;color:'+ink+';direction:rtl;font-family:\'IBM Plex Sans Arabic\',Tahoma,sans-serif;box-sizing:border-box">'+
+  return '<div style="position:relative;width:794px;background:#ffffff;color:'+ink+';direction:rtl;font-family:Tajarib,Tahoma,sans-serif;box-sizing:border-box">'+
     '<img src="'+logo+'" style="position:absolute;left:217px;top:420px;width:360px;opacity:.05">'+
     '<div style="position:relative;display:flex;align-items:flex-start;height:94px">'+
       '<div style="flex:1;margin-top:30px;height:50px;background:'+pr+';border-top:6px solid '+ac+'"></div>'+
@@ -639,15 +639,15 @@ function waText(R){
 }
 
 async function makePDF(R){
-  try{await Promise.all([document.fonts.load('700 20px Tajarib','تقرير'),document.fonts.load('400 14px "IBM Plex Sans Arabic"','تقرير'),document.fonts.ready])}catch(e){}
   const host=document.createElement("div");
   host.style.cssText="position:fixed;left:-10000px;top:0;width:794px;background:#ffffff";
   host.innerHTML=paperHTML(R);
   document.body.appendChild(host);
+  try{await document.fonts.load("700 12px Tajarib",host.textContent||"تقرير");await document.fonts.ready}catch(e){}
   try{
     const imgs=Array.from(host.querySelectorAll("img"));
     await Promise.all(imgs.map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r})));
-    const cv=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false,windowWidth:794,onclone:d=>{const k=d.createElement("style");k.textContent=":root{color-scheme:light}";d.head.appendChild(k)}});
+    const cv=await html2canvas(host.firstElementChild,{scale:2,backgroundColor:"#ffffff",useCORS:true,logging:false,windowWidth:794,onclone:async d=>{const k=d.createElement("style");k.textContent=":root{color-scheme:light}";d.head.appendChild(k);try{await d.fonts.load("700 12px Tajarib",host.textContent||"تقرير");await d.fonts.ready}catch(e){}}});
     const pdf=new window.jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"});
     const pw=210,ph=297;let w=pw,h=cv.height*pw/cv.width;
     if(h>ph){w=pw*ph/h;h=ph}
